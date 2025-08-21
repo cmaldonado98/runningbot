@@ -40,25 +40,29 @@ async def hoy(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         
         msg = f'🏃‍♂️ Actividades de hoy ({datetime.datetime.now().strftime("%d/%m/%Y")}):\n\n'
+        
         for i, act in enumerate(activities, 1):
-            # Convertir distancia de metros a kilómetros
-            distance_km = act.distance.magnitude / 1000 if act.distance else 0
-            
-            # Formatear tiempo de movimiento
-            moving_time = str(act.moving_time) if act.moving_time else "N/A"
-            
-            # Tipo de actividad
-            activity_type = act.type if act.type else "Actividad"
-            
-            msg += f"{i}. {activity_type}: {act.name}\n"
-            msg += f"   📏 Distancia: {distance_km:.2f} km\n"
-            msg += f"   ⏱️ Tiempo: {moving_time}\n"
-            if act.average_speed:
-                avg_speed_kmh = act.average_speed.magnitude * 3.6
-                msg += f"   🏃 Velocidad promedio: {avg_speed_kmh:.2f} km/h\n"
+            msg += f"--- Actividad {i} ---\n"
+            # Mostrar toda la información completa del objeto activity
+            for attr_name in dir(act):
+                if not attr_name.startswith('_'):  # Excluir métodos privados
+                    try:
+                        attr_value = getattr(act, attr_name)
+                        if not callable(attr_value):  # Excluir métodos
+                            msg += f"{attr_name}: {attr_value}\n"
+                    except:
+                        pass  # Si hay error al obtener el atributo, continuar
             msg += "\n"
             
-        await update.message.reply_text(msg)
+        # Telegram tiene límite de 4096 caracteres por mensaje
+        if len(msg) > 4000:
+            # Dividir en múltiples mensajes
+            await update.message.reply_text(msg[:4000] + "...\n(Mensaje cortado - demasiada información)")
+            if len(msg) > 4000:
+                await update.message.reply_text("..." + msg[4000:8000])
+        else:
+            await update.message.reply_text(msg)
+            
     except Exception as e:
         await update.message.reply_text(f'❌ Error al obtener actividades: {e}')
 
