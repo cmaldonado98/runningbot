@@ -39,30 +39,41 @@ async def hoy(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text('No hay actividades registradas hoy en Strava.')
             return
         
-        msg = f'🏃‍♂️ Actividades de hoy ({datetime.datetime.now().strftime("%d/%m/%Y")}):\n\n'
+        # Crear contenido para el archivo
+        content = f'Actividades de hoy ({datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")})\n'
+        content += '=' * 50 + '\n\n'
         
         for i, act in enumerate(activities, 1):
-            msg += f"--- Actividad {i} ---\n"
+            content += f"--- Actividad {i} ---\n"
             # Mostrar toda la información completa del objeto activity
             for attr_name in dir(act):
                 if not attr_name.startswith('_'):  # Excluir métodos privados
                     try:
                         attr_value = getattr(act, attr_name)
                         if not callable(attr_value):  # Excluir métodos
-                            msg += f"{attr_name}: {attr_value}\n"
+                            content += f"{attr_name}: {attr_value}\n"
                     except:
                         pass  # Si hay error al obtener el atributo, continuar
-            msg += "\n"
-            
-        # Telegram tiene límite de 4096 caracteres por mensaje
-        if len(msg) > 4000:
-            # Dividir en múltiples mensajes
-            await update.message.reply_text(msg[:4000] + "...\n(Mensaje cortado - demasiada información)")
-            if len(msg) > 4000:
-                await update.message.reply_text("..." + msg[4000:8000])
-        else:
-            await update.message.reply_text(msg)
-            
+            content += "\n" + "="*50 + "\n\n"
+        
+        # Guardar en archivo temporal
+        filename = f"actividades_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        filepath = os.path.join(os.getcwd(), filename)
+        
+        with open(filepath, 'w', encoding='utf-8') as file:
+            file.write(content)
+        
+        # Enviar archivo al usuario
+        with open(filepath, 'rb') as file:
+            await update.message.reply_document(
+                document=file,
+                filename=filename,
+                caption=f'📋 Actividades de Strava del {datetime.datetime.now().strftime("%d/%m/%Y")}'
+            )
+        
+        # Eliminar archivo temporal después de enviarlo
+        os.remove(filepath)
+        
     except Exception as e:
         await update.message.reply_text(f'❌ Error al obtener actividades: {e}')
 
