@@ -1,0 +1,3 @@
+# requirements.txt para Strava Telegram Bot
+python-telegram-bot
+stravalib
